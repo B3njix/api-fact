@@ -1,0 +1,11 @@
+DROP TABLE IF EXISTS auditoria_logs;
+DROP TABLE IF EXISTS webhooks;
+DROP TABLE IF EXISTS eventos_invalidacion;
+DROP TABLE IF EXISTS transmisiones_mh;
+DROP TABLE IF EXISTS dtes;
+DROP TABLE IF EXISTS api_keys;
+DROP TABLE IF EXISTS certificados;
+DROP TABLE IF EXISTS correlativos;
+DROP TABLE IF EXISTS puntos_venta;
+DROP TABLE IF EXISTS establecimientos;
+DROP TABLE IF EXISTS tenants;

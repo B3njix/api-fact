@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # Base de Datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: apifact_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: apifact_db
+      POSTGRES_USER: apifact_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-apifact_secure_pw_2026}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - apifact_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apifact_user -d apifact_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Colas Redis
+  redis:
+    image: redis:7-alpine
+    container_name: apifact_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_secure_pw_2026}
+    volumes:
+      - redis_data:/data
+    networks:
+      - apifact_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend Go API-Fact
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apifact_backend
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgres://apifact_user:${DB_PASSWORD:-apifact_secure_pw_2026}@postgres:5432/apifact_db?sslmode=disable
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secure_pw_2026}@redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-apifact_jwt_secret_chivodevs_2026}
+      MH_SANDBOX_URL: http://sandbox:8085
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - apifact_internal
+      - apifact_web
+
+  # Simulador Sandbox Local de Hacienda
+  sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apifact_sandbox
+    command: ["/usr/local/bin/api-fact-sandbox"]
+    restart: unless-stopped
+    environment:
+      SANDBOX_PORT: 8085
+    networks:
+      - apifact_internal
+
+  # Reverse Proxy Caddy con TLS automático
+  caddy:
+    image: caddy:2-alpine
+    container_name: apifact_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    networks:
+      - apifact_web
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  apifact_internal:
+    internal: true
+  apifact_web:

@@ -1,0 +1,6 @@
+{
+  "name": "API-Fact — Facturación Electrónica El Salvador",
+  "description": "Plataforma multiempresa de Facturación Electrónica para El Salvador: motor DTE, firma JWS, sandbox de Hacienda, API pública y panel de control.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
